@@ -33,6 +33,7 @@
   input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
     background:#fff;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;}
   input:focus,select:focus{outline:none;border-color:var(--accent);}
+  input[readonly]{background:#f5f0e8;color:var(--muted);cursor:not-allowed;}
   .unit{font-size:11px;color:var(--muted);margin-left:4px;}
   .pbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px;
     background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;}
@@ -55,7 +56,8 @@
   .big.plan{background:linear-gradient(180deg,#fff,#f1f4ec);border-color:var(--accent2);}
   .brk{font-size:12px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums;}
   .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
-  @media(max-width:520px){.three{grid-template-columns:1fr;}}
+  .four{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  @media(max-width:520px){.three{grid-template-columns:1fr;}.four{grid-template-columns:1fr;}}
   .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center;}
   .stat .n{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
   .stat .l{font-size:11px;color:var(--muted);margin-top:2px;}
@@ -176,6 +178,11 @@
           <div class="stat"><div class="n" id="oPriceYield">—</div><div class="l">總價投報率/年</div></div>
           <div class="stat"><div class="n" id="oHoldRent">—</div><div class="l">持有期租金合計</div></div>
         </div>
+        <div class="four" style="margin-top:8px;">
+          <div class="stat"><div class="n" id="oCostYield">—</div><div class="l">成本毛投報<br><span style="font-size:10px;color:var(--muted);">年毛租 ÷（買+裝+買費）</span></div></div>
+          <div class="stat"><div class="n" id="oExitYield">—</div><div class="l">出場隱含投報<br><span style="font-size:10px;color:var(--muted);">年毛租 ÷ 賣價合計</span></div></div>
+        </div>
+        <div class="hint" style="margin-top:6px;">成本投報 &gt; 出場投報 = 翻轉價差空間（例：10.5% 成本做出來、7% 賣掉）</div>
       </div>
 
       <div class="card" style="border-color:var(--accent3);">
@@ -199,6 +206,7 @@
         <div class="kv"><span>資本利得（課稅基礎）</span><span class="v" id="oGain">—</span></div>
         <div class="kv"><span>房地合一稅</span><span class="v neg" id="oCGT">—</span></div>
         <div class="kv"><span>賣方仲介費</span><span class="v neg" id="oSeller">—</span></div>
+        <div class="kv" id="lvtRow" style="display:none;"><span>土地增值稅</span><span class="v neg" id="oLVT">—</span></div>
         <div class="kv" id="payoffRow" style="display:none;"><span>清償貸款</span><span class="v neg" id="oPayoff">—</span></div>
         <div class="kv"><span><b>賣出淨回收</b></span><span class="v" id="oSaleNet">—</span></div>
       </div>
@@ -226,8 +234,9 @@
       <li><b>計畫真實總收益</b> = 各投資標的總收益合計 ＋ 現有房產持有期淨現金流（五股租金＋三重租金 − 三重房貸 − 自住租金）×月數。把「換房住要多付的租金、三重房貸繼續繳」全攤進去。</li>
       <li>兩間標的若持有年數不同，現有房產的累積以「最長那間」為計畫期間。</li>
       <li>不把五股／三重的「房子本身」算進收益（你會留著）；五股若賣掉，扣仲介＋土增稅後的淨額當「挹注投資的資本」單獨列示。</li>
-      <li><b>房地合一稅 2.0</b>（個人/非自住）：≤2年45%、2–5年35%、5–10年20%、&gt;10年15%。隔套出租不適用自住優惠。改持有年數會自動帶建議稅率，可手動覆蓋。</li>
+      <li><b>房地合一稅 2.0</b>（個人/非自住）：持有 2 年以內 45%、2–5 年 35%、5–10 年 20%、&gt;10 年 15%。隔套出租不適用自住優惠。改持有年數會自動帶建議稅率，可手動覆蓋。</li>
       <li><b>裝潢能否回收</b>是隔套翻轉命門：賣自住客→裝潢歸零；賣投資客→才算進賣價。賣價欄請反映「市場願意付的價」。</li>
+      <li><b>收益還原法</b>（翻轉打法）：裝潢隔套創造穩定租金流，再以市場投報率還原賣給投資客；賣價 ＝ 年毛租 ÷ 出場投報率。翻轉獲利引擎 ＝ 成本投報率與出場投報率的利差（例：10.5% 成本做出來、7% 賣掉）。</li>
       <li><b>新青安切結</b>：本人須設籍＋實住，出租或讓他人住會被追回補貼＋利率重核；投資物件勿掛新青安。</li>
     </ul>
   </details>
@@ -260,7 +269,7 @@ function blockHTML(i){
     <div class="subh">買進成本</div>
     <div class="row">
       <div><label>買價<span class="unit">萬</span></label><input id="buyPrice_${i}" type="number" value="600" oninput="onBuyInput(${i})"></div>
-      <div><label>裝潢／隔套<span class="unit">萬</span></label><input id="reno_${i}" type="number" value="150" oninput="calc()"></div>
+      <div><label>裝潢／隔套<span class="unit">萬</span></label><input id="reno_${i}" type="number" value="150" oninput="onRenoInput(${i})"></div>
     </div>
     <label>付款方式</label>
     <select id="mode_${i}" onchange="calc()"><option value="cash">全現金</option><option value="loan">貸款</option></select>
@@ -273,24 +282,43 @@ function blockHTML(i){
 
     <div class="subh">出租</div>
     <div class="row">
-      <div><label>隔套數量<span class="unit">套</span></label><input id="units_${i}" type="number" value="3" oninput="calc()"></div>
-      <div><label>每套月租<span class="unit">元</span></label><input id="rent_${i}" type="number" value="13000" oninput="calc()"></div>
+      <div><label>隔套數量<span class="unit">套</span></label><input id="units_${i}" type="number" value="3" oninput="onRentInput(${i})"></div>
+      <div><label>每套月租<span class="unit">元</span></label><input id="rent_${i}" type="number" value="13000" oninput="onRentInput(${i})"></div>
     </div>
     <div class="row">
       <div><label>空置＋修繕<span class="unit">%</span></label><input id="vacancy_${i}" type="number" value="10" oninput="calc()"></div>
       <div><label>年稅費（租賃＋囤房）<span class="unit">萬/年</span></label><input id="annTax_${i}" type="number" step="0.1" value="1" oninput="calc()"></div>
     </div>
+    <label>裝修空窗<span class="unit">月</span></label>
+    <input id="gapMonths_${i}" type="number" value="0" oninput="calc()">
+    <div class="hint">裝修期間收不到租，文化南路案為 8 個月</div>
 
     <div class="subh">賣出</div>
+    <label>賣價計算模式</label>
+    <select id="saleMode_${i}" onchange="onSaleModeChange(${i})">
+      <option value="appr">漲幅法（房價自然漲）</option>
+      <option value="yield">收益還原法（賣投資客，翻轉打法）</option>
+    </select>
+    <div class="hint">翻轉案（裝潢創造租金再賣投資客）請用收益還原法；自住市場物件用漲幅法</div>
     <div class="row">
-      <div><label>持有年數<span class="unit">年</span></label><input id="hold_${i}" type="number" value="2" oninput="onHoldInput(${i})"></div>
+      <div><label>持有年數<span class="unit">年</span></label>
+        <input id="hold_${i}" type="number" value="2" oninput="onHoldInput(${i})">
+        <div class="hint">房地合一 2.0：持有 2 年以內 45%；<b>滿 2 年後</b>出場適用 35%，請填 2.1</div>
+      </div>
       <div><label>預期賣價<span class="unit">萬</span></label><input id="salePrice_${i}" type="number" value="630" oninput="onSaleInput(${i})"></div>
       <div><label>＝漲幅<span class="unit">%</span></label><input id="appr_${i}" type="number" value="5" oninput="onApprInput(${i})"></div>
+    </div>
+    <div id="yieldBox_${i}" style="display:none;">
+      <label>出場投報率<span class="unit">%</span>（收益還原法）</label>
+      <input id="exitYield_${i}" type="number" step="0.1" value="7" oninput="onExitYieldInput(${i})">
     </div>
     <div class="row">
       <div><label>賣方仲介<span class="unit">%</span></label><input id="sellerPct_${i}" type="number" step="0.1" value="4" oninput="calc()"></div>
       <div><label>房地合一稅率<span class="unit">%</span></label><input id="cgtRate_${i}" type="number" value="45" oninput="calc()"></div>
     </div>
+    <label>土地增值稅<span class="unit">萬</span></label>
+    <input id="lvtTax_${i}" type="number" value="0" oninput="calc()">
+    <div class="hint">透天/土地持分大時顯著，請查公告現值估；公寓隔套通常較小</div>
     <div class="hint">填賣價或漲幅都可以，會自動換算；改持有年數會自動帶建議稅率。</div>
   </div>`;
 }
@@ -301,14 +329,72 @@ function renderProps(n){
   c.innerHTML='';
   for(let i=0;i<n;i++)c.insertAdjacentHTML('beforeend',blockHTML(i));
   Object.keys(saved).forEach(k=>{const el=$(k);if(el)el.value=saved[k];});
+  // Re-apply sale mode display state after render
+  for(let i=0;i<n;i++){
+    const mode=($(('saleMode_'+i))||{}).value||'appr';
+    applySaleModeUI(i, mode);
+  }
 }
 function changeCount(){renderProps(+$('propCount').value);calc();}
 
+// ===== 賣價雙模式 =====
+function applySaleModeUI(i, mode){
+  const yieldBox=$('yieldBox_'+i);
+  const salePriceEl=$('salePrice_'+i);
+  const apprEl=$('appr_'+i);
+  if(!yieldBox||!salePriceEl||!apprEl)return;
+  if(mode==='yield'){
+    yieldBox.style.display='block';
+    salePriceEl.readOnly=true;
+    apprEl.readOnly=true;
+  } else {
+    yieldBox.style.display='none';
+    salePriceEl.readOnly=false;
+    apprEl.readOnly=false;
+  }
+}
+function onSaleModeChange(i){
+  const mode=$('saleMode_'+i).value;
+  applySaleModeUI(i, mode);
+  if(mode==='yield'){recalcYieldPrice(i);}
+  calc();
+}
+function recalcYieldPrice(i){
+  const units=num('units_'+i), rent=num('rent_'+i);
+  const exitYield=num('exitYield_'+i);
+  if(exitYield<=0)return;
+  const grossAnnual=units*rent*12/10000; // 萬/年
+  const sp=Math.round(grossAnnual/(exitYield/100));
+  $('salePrice_'+i).value=sp;
+  const bp=num('buyPrice_'+i);
+  if(bp>0)$('appr_'+i).value=Math.round((sp/bp-1)*1000)/10;
+}
+
 // 賣價 ⇄ 漲幅 / 持有年數→稅率
-function onApprInput(i){const bp=num('buyPrice_'+i);$('salePrice_'+i).value=Math.round(bp*(1+num('appr_'+i)/100));calc();}
-function onSaleInput(i){const bp=num('buyPrice_'+i);if(bp>0)$('appr_'+i).value=Math.round((num('salePrice_'+i)/bp-1)*1000)/10;calc();}
-function onBuyInput(i){const bp=num('buyPrice_'+i);$('salePrice_'+i).value=Math.round(bp*(1+num('appr_'+i)/100));calc();}
+function onApprInput(i){
+  if(($('saleMode_'+i)||{}).value==='yield')return;
+  const bp=num('buyPrice_'+i);$('salePrice_'+i).value=Math.round(bp*(1+num('appr_'+i)/100));calc();
+}
+function onSaleInput(i){
+  if(($('saleMode_'+i)||{}).value==='yield')return;
+  const bp=num('buyPrice_'+i);if(bp>0)$('appr_'+i).value=Math.round((num('salePrice_'+i)/bp-1)*1000)/10;calc();
+}
+function onBuyInput(i){
+  const mode=($('saleMode_'+i)||{}).value||'appr';
+  if(mode==='yield'){recalcYieldPrice(i);}
+  else{const bp=num('buyPrice_'+i);$('salePrice_'+i).value=Math.round(bp*(1+num('appr_'+i)/100));}
+  calc();
+}
+function onRenoInput(i){
+  // reno change triggers calc; yield price doesn't depend on reno
+  calc();
+}
 function onHoldInput(i){$('cgtRate_'+i).value=autoTaxRate(num('hold_'+i));calc();}
+function onRentInput(i){
+  if(($('saleMode_'+i)||{}).value==='yield'){recalcYieldPrice(i);}
+  calc();
+}
+function onExitYieldInput(i){recalcYieldPrice(i);calc();}
 
 // 單一標的計算
 function calcProp(i){
@@ -317,29 +403,37 @@ function calcProp(i){
   $('loanBox_'+i).style.display=mode==='loan'?'flex':'none';
   const lr=mode==='loan'?num('loanRatio_'+i):0, rate=num('loanRate_'+i), bpct=num('buyerPct_'+i);
   const units=num('units_'+i),rent=num('rent_'+i),vac=num('vacancy_'+i),atax=num('annTax_'+i);
+  const gap=num('gapMonths_'+i);
   const hold=num('hold_'+i),sp=num('salePrice_'+i),spct=num('sellerPct_'+i),cgt=num('cgtRate_'+i);
+  const lvt=num('lvtTax_'+i);
   const loanAmt=bp*lr/100, down=bp-loanAmt, buyerCost=bp*bpct/100, cashIn=down+reno+buyerCost;
   const monthRent=units*rent, gross=monthRent*12/10000, netRent=gross*(1-vac/100)-atax;
-  const interest=loanAmt*rate/100, invCF=netRent-interest;
+  const interest=loanAmt*rate/100;
+  // invCF = 穩定期現金流（月現金流基礎），單位萬/年
+  const invCF=netRent-interest;
+  // holdRent 扣空窗期：只有出租的月份才收租
+  const rentMonths=Math.max(0, hold*12 - gap);
+  const holdRent=netRent*rentMonths/12 - interest*hold;
   const sellerComm=sp*spct/100, gain=sp-(bp+reno+buyerCost+sellerComm);
-  const cgtTax=Math.max(0,gain)*cgt/100, payoff=loanAmt, saleNet=sp-sellerComm-cgtTax-payoff;
-  const holdRent=invCF*hold, totalProfit=holdRent+saleNet-cashIn;
+  const cgtTax=Math.max(0,gain)*cgt/100, payoff=loanAmt;
+  const saleNet=sp-sellerComm-cgtTax-lvt-payoff;
+  const totalProfit=holdRent+saleNet-cashIn;
   // url link
   const link=$('urllink_'+i), url=(($('url_'+i)||{}).value||'').trim();
   if(link){if(url){link.style.display='block';link.href=url;link.textContent='🔗 '+url;}else{link.style.display='none';}}
-  return {bp,reno,loanAmt,down,buyerCost,cashIn,basis:bp+reno,monthRent,netRent,interest,invCF,
-          sp,gain,cgtTax,sellerComm,payoff,saleNet,hold,holdRent,totalProfit};
+  return {bp,reno,loanAmt,down,buyerCost,cashIn,basis:bp+reno,monthRent,gross,netRent,interest,invCF,
+          sp,gain,cgtTax,sellerComm,payoff,lvt,saleNet,hold,holdRent,totalProfit};
 }
 
 function calc(){
   const n=+$('propCount').value;
-  const A={down:0,loanAmt:0,reno:0,buyerCost:0,cashIn:0,basis:0,monthRent:0,netRent:0,interest:0,
-           invCF:0,sp:0,gain:0,cgtTax:0,sellerComm:0,payoff:0,saleNet:0,holdRent:0,totalProfit:0,maxHold:0};
+  const A={down:0,loanAmt:0,reno:0,buyerCost:0,cashIn:0,basis:0,monthRent:0,gross:0,netRent:0,interest:0,
+           invCF:0,sp:0,gain:0,cgtTax:0,sellerComm:0,payoff:0,lvt:0,saleNet:0,holdRent:0,totalProfit:0,maxHold:0};
   const perProfit=[];
   for(let i=0;i<n;i++){
     const p=calcProp(i);
-    ['down','loanAmt','reno','buyerCost','cashIn','basis','monthRent','netRent','interest',
-     'invCF','sp','gain','cgtTax','sellerComm','payoff','saleNet','holdRent','totalProfit'].forEach(k=>A[k]+=p[k]);
+    ['down','loanAmt','reno','buyerCost','cashIn','basis','monthRent','gross','netRent','interest',
+     'invCF','sp','gain','cgtTax','sellerComm','payoff','lvt','saleNet','holdRent','totalProfit'].forEach(k=>A[k]+=p[k]);
     A.maxHold=Math.max(A.maxHold,p.hold);
     perProfit.push(p.totalProfit);
   }
@@ -363,6 +457,10 @@ function calc(){
 
   const cashYield=A.cashIn>0?A.invCF/A.cashIn*100:0;
   const priceYield=A.basis>0?A.netRent/A.basis*100:0;
+  // 成本毛投報 = 年毛租金合計 ÷（買價+裝潢+買方費用）
+  const costYield=A.cashIn>0?A.gross/A.cashIn*100:0;
+  // 出場隱含投報 = 年毛租金合計 ÷ 賣價合計
+  const exitYieldCalc=A.sp>0?A.gross/A.sp*100:0;
   const roi=A.cashIn>0?A.totalProfit/A.cashIn*100:0;
   const annual=(A.cashIn>0&&(A.cashIn+A.totalProfit)>0&&A.maxHold>0)?(Math.pow((A.cashIn+A.totalProfit)/A.cashIn,1/A.maxHold)-1)*100:0;
   const needSale=(A.cashIn+A.payoff-A.holdRent)/0.96; // 約略以4%仲介估
@@ -391,6 +489,8 @@ function calc(){
   $('oCashYield').textContent=fmtPct(cashYield);$('oCashYield').className='n '+(cashYield>=0?'pos':'neg');
   $('oPriceYield').textContent=fmtPct(priceYield);
   $('oHoldRent').textContent=fmtW(A.holdRent);
+  $('oCostYield').textContent=fmtPct(costYield);$('oCostYield').className='n '+(costYield>=0?'pos':'neg');
+  $('oExitYield').textContent=fmtPct(exitYieldCalc);$('oExitYield').className='n '+(exitYieldCalc>=0?'pos':'neg');
 
   $('hWugu').textContent=fmtMoney(wuguRentM);
   $('hScRent').textContent=fmtMoney(scRentM);
@@ -405,6 +505,8 @@ function calc(){
   $('oGain').textContent=fmtW(A.gain);
   $('oCGT').textContent='− '+fmtW(A.cgtTax);
   $('oSeller').textContent='− '+fmtW(A.sellerComm);
+  $('oLVT').textContent='− '+fmtW(A.lvt);
+  $('lvtRow').style.display=A.lvt>0?'flex':'none';
   $('oPayoff').textContent='− '+fmtW(A.payoff);
   $('oSaleNet').textContent=fmtW(A.saleNet);
 
@@ -426,6 +528,12 @@ function snapshot(){
 function restore(o){
   if(o.propCount){$('propCount').value=o.propCount;renderProps(+o.propCount);}
   Object.keys(o).forEach(k=>{const el=$(k);if(el)el.value=o[k];});
+  // Re-apply sale mode UI after restoring values
+  const n=+($('propCount').value||1);
+  for(let i=0;i<n;i++){
+    const mode=($(('saleMode_'+i))||{}).value||'appr';
+    applySaleModeUI(i, mode);
+  }
   calc();
 }
 function refreshList(sel){
