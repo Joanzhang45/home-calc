@@ -458,7 +458,8 @@ function calc(){
   const cashYield=A.cashIn>0?A.invCF/A.cashIn*100:0;
   const priceYield=A.basis>0?A.netRent/A.basis*100:0;
   // 成本毛投報 = 年毛租金合計 ÷（買價+裝潢+買方費用）
-  const costYield=A.cashIn>0?A.gross/A.cashIn*100:0;
+  const totalCost=A.basis+A.buyerCost; // 買價+裝潢+買方費用（不含槓桿）
+  const costYield=totalCost>0?A.gross/totalCost*100:0;
   // 出場隱含投報 = 年毛租金合計 ÷ 賣價合計
   const exitYieldCalc=A.sp>0?A.gross/A.sp*100:0;
   const roi=A.cashIn>0?A.totalProfit/A.cashIn*100:0;
