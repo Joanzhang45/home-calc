@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>隔套收租投報試算器</title>
+<style>
+  :root{
+    --bg:#f4efe6; --paper:#fffdf8; --ink:#3a3530; --muted:#8a8175;
+    --line:#e4dccb; --accent:#b07d4f; --accent2:#6b8e6b; --accent3:#7a6a9e;
+    --pos:#3f7a4f; --neg:#c0563f; --chip:#efe7d6;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;padding:24px 16px 80px;}
+  .wrap{max-width:1120px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:1px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+  @media(max-width:860px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px 20px;box-shadow:0 1px 0 rgba(0,0,0,.02);margin-bottom:20px;}
+  .card h2{font-size:14px;margin:0 0 14px;letter-spacing:1px;color:var(--accent);
+    border-bottom:1px dashed var(--line);padding-bottom:8px;}
+  .card.bg h2{color:var(--accent3);}
+  .card.prop h2{color:#a85d3a;}
+  .subh{font-size:12px;font-weight:700;color:var(--accent);margin:14px 0 2px;
+    border-top:1px dashed var(--line);padding-top:10px;}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 3px;}
+  .row{display:flex;gap:10px;}
+  .row>div{flex:1;}
+  input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;
+    background:#fff;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;}
+  input:focus,select:focus{outline:none;border-color:var(--accent);}
+  .unit{font-size:11px;color:var(--muted);margin-left:4px;}
+  .pbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px;
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .pbar select{flex:1;min-width:140px;}
+  .btn{padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;
+    cursor:pointer;font-size:13px;color:var(--ink);white-space:nowrap;}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.ghost{color:var(--neg);}
+  a.link{color:var(--accent);font-size:12px;text-decoration:none;word-break:break-all;display:block;margin-top:6px;}
+  a.link:hover{text-decoration:underline;}
+  .res .card h2{color:var(--accent2);}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;
+    padding:6px 0;border-bottom:1px solid #f0e9da;font-size:14px;}
+  .kv:last-child{border-bottom:none;}
+  .kv .v{font-variant-numeric:tabular-nums;font-weight:600;}
+  .big{margin-top:4px;background:linear-gradient(180deg,#fff,#fbf6ec);
+    border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px;}
+  .big .num{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .big .lab{font-size:12px;color:var(--muted);letter-spacing:.5px;margin-top:2px;}
+  .big.plan{background:linear-gradient(180deg,#fff,#f1f4ec);border-color:var(--accent2);}
+  .brk{font-size:12px;color:var(--muted);margin-top:8px;font-variant-numeric:tabular-nums;}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;}
+  @media(max-width:520px){.three{grid-template-columns:1fr;}}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center;}
+  .stat .n{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .stat .l{font-size:11px;color:var(--muted);margin-top:2px;}
+  .pos{color:var(--pos);} .neg{color:var(--neg);}
+  details{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;}
+  details ul{font-size:12.5px;color:var(--muted);margin:10px 0 0;padding-left:18px;}
+  details li{margin-bottom:5px;}
+  .hint{font-size:11px;color:var(--muted);margin-top:3px;}
+  .warn{font-size:11.5px;color:var(--neg);margin-top:6px;display:none;}
+  footer{text-align:center;color:var(--muted);font-size:11px;margin-top:24px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏠 隔套收租投報試算器 <span style="font-size:13px;color:var(--muted);">家庭整體版</span></h1>
+  <div class="sub">可選買 1 或 2 間 · 把五股＋三重現有房子的持有負擔也算進去 · 方案存在本機瀏覽器</div>
+
+  <div class="pbar">
+    <select id="pselect" onchange="loadProp()"></select>
+    <input id="planName" placeholder="方案名稱（例：買2間長抱）" style="flex:1;min-width:160px;">
+    <button class="btn primary" onclick="saveProp()">💾 儲存方案</button>
+    <button class="btn" onclick="newProp()">＋ 新方案</button>
+    <button class="btn" onclick="copyShareLink()">🔗 複製分享連結</button>
+    <button class="btn ghost" onclick="delProp()">刪除</button>
+  </div>
+
+  <!-- ⓪ 現有房產背景 -->
+  <div class="card bg">
+    <h2>⓪ 現有房產與居住安排（決定持有期間的負擔）</h2>
+    <div class="grid" style="gap:16px;margin-bottom:0;">
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">🏚️ 五股房（爸媽，已繳清）</div>
+        <div class="row">
+          <div><label>市值<span class="unit">萬</span></label><input id="wuguValue" type="number" value="1000" oninput="calc()"></div>
+          <div><label>處置方式</label>
+            <select id="wuguMode" onchange="calc()">
+              <option value="rent">留著出租</option>
+              <option value="sell">賣掉（挹注投資）</option>
+              <option value="idle">留著閒置/自住</option>
+            </select>
+          </div>
+        </div>
+        <label>若出租，月租收入<span class="unit">元</span></label>
+        <input id="wuguRent" type="number" value="22000" oninput="calc()">
+        <div id="wuguSellBox" style="display:none;">
+          <div class="row">
+            <div><label>賣方仲介<span class="unit">%</span></label><input id="wuguSellPct" type="number" step="0.1" value="4" oninput="calc()"></div>
+            <div><label>土增稅＋所得稅＋雜費<span class="unit">萬</span></label><input id="wuguSellTax" type="number" value="40" oninput="calc()"></div>
+          </div>
+          <div class="hint">爸媽老屋多屬舊制，賣出主要成本是土地增值稅（自用住宅一生一次 10% 優惠）；金額請查公告土地現值估。另：賣得的錢由爸媽贈與你們另有贈與稅（雙親每年各 244 萬免稅）。</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px;">🏢 三重共構宅（瓊安名下，貸款中）</div>
+        <div class="row">
+          <div><label>月房貸<span class="unit">元</span></label><input id="scLoanPay" type="number" value="15000" oninput="calc()"></div>
+          <div><label>用途</label>
+            <select id="scUse" onchange="calc()">
+              <option value="self">我們自住</option>
+              <option value="rent">出租</option>
+              <option value="parents">給長輩住</option>
+            </select>
+          </div>
+        </div>
+        <label>若出租，月租收入<span class="unit">元</span></label>
+        <input id="scRent" type="number" value="28000" oninput="calc()">
+        <div class="hint">寬限期約 15,000，寬限期後本息攤約 32,000，可自行改。</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <div><label>我們自己住哪？</label>
+        <select id="liveMode" onchange="calc()">
+          <option value="sanchong">住三重（不另付租金）</option>
+          <option value="outside">在外租屋</option>
+        </select>
+      </div>
+      <div><label>在外租屋月租<span class="unit">元</span></label><input id="selfRent" type="number" value="20000" oninput="calc()"></div>
+      <div><label>家庭月薪資<span class="unit">元</span></label><input id="salary" type="number" value="120000" oninput="calc()"></div>
+    </div>
+    <div class="warn" id="liveWarn">⚠️ 你選了「住三重」但三重又設成出租/給長輩住，兩者衝突，請擇一。</div>
+  </div>
+
+  <div class="grid">
+    <!-- 投資標的輸入 -->
+    <div>
+      <div class="card">
+        <h2>投資標的數量</h2>
+        <select id="propCount" onchange="changeCount()">
+          <option value="1">買 1 間</option>
+          <option value="2">買 2 間</option>
+        </select>
+        <div class="hint">選 2 間會跳出第二組完整欄位，各自獨立計算，右邊結果自動合計。</div>
+      </div>
+      <div id="propsContainer"></div>
+    </div>
+
+    <!-- 結果 -->
+    <div class="res">
+      <div class="card">
+        <h2>💰 投入（全部標的合計）</h2>
+        <div class="kv"><span>頭期款</span><span class="v" id="oDown">—</span></div>
+        <div class="kv" id="loanRow" style="display:none;"><span>貸款金額</span><span class="v" id="oLoan">—</span></div>
+        <div class="kv"><span>裝潢／隔套</span><span class="v" id="oReno">—</span></div>
+        <div class="kv"><span>買方費用</span><span class="v" id="oBuyer">—</span></div>
+        <div class="kv"><span><b>投入總現金</b></span><span class="v" id="oCashIn" style="color:var(--accent);">—</span></div>
+        <div class="kv" id="injectRow" style="display:none;"><span>五股賣出可挹注</span><span class="v pos" id="oInject">—</span></div>
+        <div class="kv" id="gapRow" style="display:none;"><span><b>現金缺口／剩餘</b></span><span class="v" id="oGap">—</span></div>
+      </div>
+
+      <div class="card">
+        <h2>📈 收租（合計）</h2>
+        <div class="kv"><span>月租金總額</span><span class="v" id="oMonthRent">—</span></div>
+        <div class="kv"><span>年淨租金（扣空置稅費）</span><span class="v" id="oNetRent">—</span></div>
+        <div class="kv" id="intRow" style="display:none;"><span>年房貸利息</span><span class="v neg" id="oInt">—</span></div>
+        <div class="three">
+          <div class="stat"><div class="n" id="oCashYield">—</div><div class="l">現金投報率/年</div></div>
+          <div class="stat"><div class="n" id="oPriceYield">—</div><div class="l">總價投報率/年</div></div>
+          <div class="stat"><div class="n" id="oHoldRent">—</div><div class="l">持有期租金合計</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:var(--accent3);">
+        <h2 style="color:var(--accent3);">🏦 家庭整體現金流（持有期間）</h2>
+        <div class="kv"><span>＋ 五股租金</span><span class="v" id="hWugu">—</span></div>
+        <div class="kv"><span>＋ 三重租金</span><span class="v" id="hScRent">—</span></div>
+        <div class="kv"><span>＋ 投資標的淨現金流</span><span class="v" id="hInvCF">—</span></div>
+        <div class="kv"><span>－ 三重房貸</span><span class="v neg" id="hScLoan">—</span></div>
+        <div class="kv"><span>－ 我們自住租金</span><span class="v neg" id="hSelfRent">—</span></div>
+        <div class="kv"><span><b>房產月淨現金流（不含薪資）</b></span><span class="v" id="hPropNet">—</span></div>
+        <div class="kv"><span>＋ 家庭薪資</span><span class="v" id="hSalary">—</span></div>
+        <div class="big" style="margin:10px 0 0;">
+          <div class="num" id="hHouseholdCF">—</div>
+          <div class="lab">每月家庭淨現金流（含薪資）— 撐不撐得住看這個</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🏷️ 賣出（合計）</h2>
+        <div class="kv"><span>賣價</span><span class="v" id="oSale">—</span></div>
+        <div class="kv"><span>資本利得（課稅基礎）</span><span class="v" id="oGain">—</span></div>
+        <div class="kv"><span>房地合一稅</span><span class="v neg" id="oCGT">—</span></div>
+        <div class="kv"><span>賣方仲介費</span><span class="v neg" id="oSeller">—</span></div>
+        <div class="kv" id="payoffRow" style="display:none;"><span>清償貸款</span><span class="v neg" id="oPayoff">—</span></div>
+        <div class="kv"><span><b>賣出淨回收</b></span><span class="v" id="oSaleNet">—</span></div>
+      </div>
+
+      <div class="big">
+        <div class="num" id="oTotalProfit">—</div>
+        <div class="lab">投資標的本身總收益（持有期租金 ＋ 賣出損益）</div>
+        <div class="brk" id="profitBreakdown"></div>
+      </div>
+      <div class="big plan">
+        <div class="num" id="oPlanProfit">—</div>
+        <div class="lab">★ 計畫真實總收益（已扣三重房貸＋自住租金等全部負擔）</div>
+        <div class="three">
+          <div class="stat"><div class="n" id="oROI">—</div><div class="l">投資投報率</div></div>
+          <div class="stat"><div class="n" id="oAnnual">—</div><div class="l">年化報酬</div></div>
+          <div class="stat"><div class="n" id="oBreakeven">—</div><div class="l">打平所需漲幅</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>📌 試算邏輯與法規備忘（點開）</summary>
+    <ul>
+      <li><b>計畫真實總收益</b> = 各投資標的總收益合計 ＋ 現有房產持有期淨現金流（五股租金＋三重租金 − 三重房貸 − 自住租金）×月數。把「換房住要多付的租金、三重房貸繼續繳」全攤進去。</li>
+      <li>兩間標的若持有年數不同，現有房產的累積以「最長那間」為計畫期間。</li>
+      <li>不把五股／三重的「房子本身」算進收益（你會留著）；五股若賣掉，扣仲介＋土增稅後的淨額當「挹注投資的資本」單獨列示。</li>
+      <li><b>房地合一稅 2.0</b>（個人/非自住）：≤2年45%、2–5年35%、5–10年20%、&gt;10年15%。隔套出租不適用自住優惠。改持有年數會自動帶建議稅率，可手動覆蓋。</li>
+      <li><b>裝潢能否回收</b>是隔套翻轉命門：賣自住客→裝潢歸零；賣投資客→才算進賣價。賣價欄請反映「市場願意付的價」。</li>
+      <li><b>新青安切結</b>：本人須設籍＋實住，出租或讓他人住會被追回補貼＋利率重核；投資物件勿掛新青安。</li>
+    </ul>
+  </details>
+
+  <footer>本機試算工具 · 方案存在你的瀏覽器 · 要同步給對方就按「🔗 複製分享連結」傳過去</footer>
+</div>
+
+<script>
+const KEY='rental_calc_plans_v3';
+function $(id){return document.getElementById(id);}
+function num(id){const el=$(id);return el?(parseFloat(el.value)||0):0;}
+function fmtW(v){return (Math.round(v*10)/10).toLocaleString('en-US',{maximumFractionDigits:1})+' 萬';}
+function fmtMoney(v){return Math.round(v).toLocaleString('en-US')+' 元';}
+function fmtPct(v){return (Math.round(v*10)/10)+' %';}
+function signW(v){return (v>=0?'+ ':'− ')+fmtW(Math.abs(v));}
+function signMoney(v){return (v>=0?'+ ':'− ')+fmtMoney(Math.abs(v));}
+function autoTaxRate(h){if(h<=2)return 45;if(h<=5)return 35;if(h<=10)return 20;return 15;}
+
+// ===== 投資標的區塊 =====
+function blockHTML(i){
+  const n=i+1;
+  return `<div class="card prop">
+    <h2>🏠 投資標的 ${n}</h2>
+    <label>名稱／地址</label>
+    <input id="name_${i}" placeholder="例：三重重新路三段○○號" oninput="calc()">
+    <label>591／物件網址（會一起存起來）</label>
+    <input id="url_${i}" placeholder="貼上 591 連結" oninput="calc()">
+    <a id="urllink_${i}" class="link" target="_blank" style="display:none;"></a>
+
+    <div class="subh">買進成本</div>
+    <div class="row">
+      <div><label>買價<span class="unit">萬</span></label><input id="buyPrice_${i}" type="number" value="600" oninput="onBuyInput(${i})"></div>
+      <div><label>裝潢／隔套<span class="unit">萬</span></label><input id="reno_${i}" type="number" value="150" oninput="calc()"></div>
+    </div>
+    <label>付款方式</label>
+    <select id="mode_${i}" onchange="calc()"><option value="cash">全現金</option><option value="loan">貸款</option></select>
+    <div class="row" id="loanBox_${i}" style="display:none;">
+      <div><label>貸款成數<span class="unit">%</span></label><input id="loanRatio_${i}" type="number" value="80" oninput="calc()"></div>
+      <div><label>年利率<span class="unit">%</span></label><input id="loanRate_${i}" type="number" step="0.01" value="2.5" oninput="calc()"></div>
+    </div>
+    <label>買方費用（契稅＋代書＋仲介）<span class="unit">% 買價</span></label>
+    <input id="buyerPct_${i}" type="number" step="0.1" value="3.5" oninput="calc()">
+
+    <div class="subh">出租</div>
+    <div class="row">
+      <div><label>隔套數量<span class="unit">套</span></label><input id="units_${i}" type="number" value="3" oninput="calc()"></div>
+      <div><label>每套月租<span class="unit">元</span></label><input id="rent_${i}" type="number" value="13000" oninput="calc()"></div>
+    </div>
+    <div class="row">
+      <div><label>空置＋修繕<span class="unit">%</span></label><input id="vacancy_${i}" type="number" value="10" oninput="calc()"></div>
+      <div><label>年稅費（租賃＋囤房）<span class="unit">萬/年</span></label><input id="annTax_${i}" type="number" step="0.1" value="1" oninput="calc()"></div>
+    </div>
+
+    <div class="subh">賣出</div>
+    <div class="row">
+      <div><label>持有年數<span class="unit">年</span></label><input id="hold_${i}" type="number" value="2" oninput="onHoldInput(${i})"></div>
+      <div><label>預期賣價<span class="unit">萬</span></label><input id="salePrice_${i}" type="number" value="630" oninput="onSaleInput(${i})"></div>
+      <div><label>＝漲幅<span class="unit">%</span></label><input id="appr_${i}" type="number" value="5" oninput="onApprInput(${i})"></div>
+    </div>
+    <div class="row">
+      <div><label>賣方仲介<span class="unit">%</span></label><input id="sellerPct_${i}" type="number" step="0.1" value="4" oninput="calc()"></div>
+      <div><label>房地合一稅率<span class="unit">%</span></label><input id="cgtRate_${i}" type="number" value="45" oninput="calc()"></div>
+    </div>
+    <div class="hint">填賣價或漲幅都可以，會自動換算；改持有年數會自動帶建議稅率。</div>
+  </div>`;
+}
+
+function renderProps(n){
+  const c=$('propsContainer');
+  const saved={};c.querySelectorAll('input,select').forEach(el=>{if(el.id)saved[el.id]=el.value;});
+  c.innerHTML='';
+  for(let i=0;i<n;i++)c.insertAdjacentHTML('beforeend',blockHTML(i));
+  Object.keys(saved).forEach(k=>{const el=$(k);if(el)el.value=saved[k];});
+}
+function changeCount(){renderProps(+$('propCount').value);calc();}
+
+// 賣價 ⇄ 漲幅 / 持有年數→稅率
+function onApprInput(i){const bp=num('buyPrice_'+i);$('salePrice_'+i).value=Math.round(bp*(1+num('appr_'+i)/100));calc();}
+function onSaleInput(i){const bp=num('buyPrice_'+i);if(bp>0)$('appr_'+i).value=Math.round((num('salePrice_'+i)/bp-1)*1000)/10;calc();}
+function onBuyInput(i){const bp=num('buyPrice_'+i);$('salePrice_'+i).value=Math.round(bp*(1+num('appr_'+i)/100));calc();}
+function onHoldInput(i){$('cgtRate_'+i).value=autoTaxRate(num('hold_'+i));calc();}
+
+// 單一標的計算
+function calcProp(i){
+  const bp=num('buyPrice_'+i),reno=num('reno_'+i);
+  const mode=($('mode_'+i)||{}).value||'cash';
+  $('loanBox_'+i).style.display=mode==='loan'?'flex':'none';
+  const lr=mode==='loan'?num('loanRatio_'+i):0, rate=num('loanRate_'+i), bpct=num('buyerPct_'+i);
+  const units=num('units_'+i),rent=num('rent_'+i),vac=num('vacancy_'+i),atax=num('annTax_'+i);
+  const hold=num('hold_'+i),sp=num('salePrice_'+i),spct=num('sellerPct_'+i),cgt=num('cgtRate_'+i);
+  const loanAmt=bp*lr/100, down=bp-loanAmt, buyerCost=bp*bpct/100, cashIn=down+reno+buyerCost;
+  const monthRent=units*rent, gross=monthRent*12/10000, netRent=gross*(1-vac/100)-atax;
+  const interest=loanAmt*rate/100, invCF=netRent-interest;
+  const sellerComm=sp*spct/100, gain=sp-(bp+reno+buyerCost+sellerComm);
+  const cgtTax=Math.max(0,gain)*cgt/100, payoff=loanAmt, saleNet=sp-sellerComm-cgtTax-payoff;
+  const holdRent=invCF*hold, totalProfit=holdRent+saleNet-cashIn;
+  // url link
+  const link=$('urllink_'+i), url=(($('url_'+i)||{}).value||'').trim();
+  if(link){if(url){link.style.display='block';link.href=url;link.textContent='🔗 '+url;}else{link.style.display='none';}}
+  return {bp,reno,loanAmt,down,buyerCost,cashIn,basis:bp+reno,monthRent,netRent,interest,invCF,
+          sp,gain,cgtTax,sellerComm,payoff,saleNet,hold,holdRent,totalProfit};
+}
+
+function calc(){
+  const n=+$('propCount').value;
+  const A={down:0,loanAmt:0,reno:0,buyerCost:0,cashIn:0,basis:0,monthRent:0,netRent:0,interest:0,
+           invCF:0,sp:0,gain:0,cgtTax:0,sellerComm:0,payoff:0,saleNet:0,holdRent:0,totalProfit:0,maxHold:0};
+  const perProfit=[];
+  for(let i=0;i<n;i++){
+    const p=calcProp(i);
+    ['down','loanAmt','reno','buyerCost','cashIn','basis','monthRent','netRent','interest',
+     'invCF','sp','gain','cgtTax','sellerComm','payoff','saleNet','holdRent','totalProfit'].forEach(k=>A[k]+=p[k]);
+    A.maxHold=Math.max(A.maxHold,p.hold);
+    perProfit.push(p.totalProfit);
+  }
+
+  // 現有房產（元/月）
+  const wuguMode=$('wuguMode').value, scUse=$('scUse').value, liveMode=$('liveMode').value;
+  $('wuguSellBox').style.display=wuguMode==='sell'?'block':'none';
+  const wuguRentM=wuguMode==='rent'?num('wuguRent'):0;
+  const wuguInject=wuguMode==='sell'?(num('wuguValue')*(1-num('wuguSellPct')/100)-num('wuguSellTax')):0;
+  const scRentM=scUse==='rent'?num('scRent'):0;
+  const scLoanM=num('scLoanPay');
+  const selfRentM=liveMode==='outside'?num('selfRent'):0;
+  const salaryM=num('salary');
+  const invCFmonthly=A.invCF*10000/12;
+  $('liveWarn').style.display=(liveMode==='sanchong'&&scUse!=='self')?'block':'none';
+
+  const propNetM=wuguRentM+scRentM-scLoanM-selfRentM;
+  const householdM=propNetM+invCFmonthly+salaryM;
+  const propHold=propNetM*12/10000*A.maxHold;
+  const planProfit=A.totalProfit+propHold;
+
+  const cashYield=A.cashIn>0?A.invCF/A.cashIn*100:0;
+  const priceYield=A.basis>0?A.netRent/A.basis*100:0;
+  const roi=A.cashIn>0?A.totalProfit/A.cashIn*100:0;
+  const annual=(A.cashIn>0&&(A.cashIn+A.totalProfit)>0&&A.maxHold>0)?(Math.pow((A.cashIn+A.totalProfit)/A.cashIn,1/A.maxHold)-1)*100:0;
+  const needSale=(A.cashIn+A.payoff-A.holdRent)/0.96; // 約略以4%仲介估
+  const totalBuy=A.basis-A.reno;
+  const breakeven=totalBuy>0?(needSale/totalBuy-1)*100:0;
+  const gap=wuguInject-A.cashIn;
+
+  // 輸出
+  $('oDown').textContent=fmtW(A.down);
+  $('oLoan').textContent=fmtW(A.loanAmt);
+  $('oReno').textContent=fmtW(A.reno);
+  $('oBuyer').textContent=fmtW(A.buyerCost);
+  $('oCashIn').textContent=fmtW(A.cashIn);
+  $('loanRow').style.display=A.loanAmt>0?'flex':'none';
+  $('intRow').style.display=A.loanAmt>0?'flex':'none';
+  $('payoffRow').style.display=A.loanAmt>0?'flex':'none';
+  if(wuguMode==='sell'){
+    $('injectRow').style.display='flex';$('gapRow').style.display='flex';
+    $('oInject').textContent=fmtW(wuguInject);
+    $('oGap').textContent=signW(gap);$('oGap').className='v '+(gap>=0?'pos':'neg');
+  }else{$('injectRow').style.display='none';$('gapRow').style.display='none';}
+
+  $('oMonthRent').textContent=fmtMoney(A.monthRent);
+  $('oNetRent').textContent=fmtW(A.netRent);
+  $('oInt').textContent='− '+fmtW(A.interest);
+  $('oCashYield').textContent=fmtPct(cashYield);$('oCashYield').className='n '+(cashYield>=0?'pos':'neg');
+  $('oPriceYield').textContent=fmtPct(priceYield);
+  $('oHoldRent').textContent=fmtW(A.holdRent);
+
+  $('hWugu').textContent=fmtMoney(wuguRentM);
+  $('hScRent').textContent=fmtMoney(scRentM);
+  $('hInvCF').textContent=signMoney(invCFmonthly);
+  $('hScLoan').textContent='− '+fmtMoney(scLoanM);
+  $('hSelfRent').textContent='− '+fmtMoney(selfRentM);
+  $('hPropNet').textContent=signMoney(propNetM);$('hPropNet').className='v '+(propNetM>=0?'pos':'neg');
+  $('hSalary').textContent='+ '+fmtMoney(salaryM);
+  $('hHouseholdCF').textContent=signMoney(householdM);$('hHouseholdCF').className='num '+(householdM>=0?'pos':'neg');
+
+  $('oSale').textContent=fmtW(A.sp);
+  $('oGain').textContent=fmtW(A.gain);
+  $('oCGT').textContent='− '+fmtW(A.cgtTax);
+  $('oSeller').textContent='− '+fmtW(A.sellerComm);
+  $('oPayoff').textContent='− '+fmtW(A.payoff);
+  $('oSaleNet').textContent=fmtW(A.saleNet);
+
+  $('oTotalProfit').textContent=signW(A.totalProfit);$('oTotalProfit').className='num '+(A.totalProfit>=0?'pos':'neg');
+  $('profitBreakdown').textContent=n>1?('標的1 '+signW(perProfit[0])+'　｜　標的2 '+signW(perProfit[1])):'';
+  $('oPlanProfit').textContent=signW(planProfit);$('oPlanProfit').className='num '+(planProfit>=0?'pos':'neg');
+  $('oROI').textContent=fmtPct(roi);$('oROI').className='n '+(roi>=0?'pos':'neg');
+  $('oAnnual').textContent=fmtPct(annual);$('oAnnual').className='n '+(annual>=0?'pos':'neg');
+  $('oBreakeven').textContent=fmtPct(breakeven);
+}
+
+// ===== 方案存取（依 id 通用序列化）=====
+function getPlans(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return[];}}
+function setPlans(a){localStorage.setItem(KEY,JSON.stringify(a));}
+function snapshot(){
+  const o={};document.querySelectorAll('input,select').forEach(el=>{if(el.id&&el.id!=='pselect')o[el.id]=el.value;});
+  return o;
+}
+function restore(o){
+  if(o.propCount){$('propCount').value=o.propCount;renderProps(+o.propCount);}
+  Object.keys(o).forEach(k=>{const el=$(k);if(el)el.value=o[k];});
+  calc();
+}
+function refreshList(sel){
+  const plans=getPlans(),s=$('pselect');
+  s.innerHTML='<option value="">— 選擇已存方案 —</option>';
+  plans.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.planName||('方案 '+(i+1));s.appendChild(o);});
+  if(sel!==undefined)s.value=sel;
+}
+function saveProp(){
+  const plans=getPlans(),obj=snapshot();
+  obj.planName=$('planName').value.trim()||'未命名方案';
+  const sel=$('pselect').value;
+  if(sel!==''){plans[+sel]=obj;refreshList(sel);}else{plans.push(obj);refreshList(plans.length-1);}
+  setPlans(plans);alert('已儲存：'+obj.planName);
+}
+function loadProp(){
+  const sel=$('pselect').value;if(sel==='')return;
+  const p=getPlans()[+sel];if(!p)return;restore(p);
+}
+function newProp(){$('pselect').value='';$('planName').value='';calc();}
+function delProp(){
+  const sel=$('pselect').value;if(sel===''){alert('先選一個方案');return;}
+  if(!confirm('確定刪除這個方案？'))return;
+  const plans=getPlans();plans.splice(+sel,1);setPlans(plans);refreshList();newProp();
+}
+
+// ===== 分享連結 =====
+function copyShareLink(){
+  const data=snapshot();
+  const planName=$('planName').value.trim();
+  if(planName)data.planName=planName;
+  try{
+    const json=JSON.stringify(data);
+    const encoded=btoa(unescape(encodeURIComponent(json)));
+    const url=location.href.split('#')[0]+'#p='+encoded;
+    location.hash='#p='+encoded;
+    navigator.clipboard.writeText(url).then(function(){
+      alert('連結已複製，傳給對方打開就能看到這個方案');
+    }).catch(function(){
+      prompt('手動複製：',url);
+    });
+  }catch(e){
+    alert('產生連結失敗：'+e.message);
+  }
+}
+
+// ===== 從 hash 還原分享方案 =====
+function loadFromHash(){
+  try{
+    const h=location.hash;
+    if(!h||h.indexOf('#p=')<0)return;
+    const encoded=h.slice(h.indexOf('#p=')+3);
+    if(!encoded)return;
+    const json=decodeURIComponent(escape(atob(encoded)));
+    const o=JSON.parse(json);
+    restore(o);
+    if(o.planName)$('planName').value=o.planName;
+  }catch(e){
+    // 解碼失敗靜默忽略
+  }
+}
+
+renderProps(1);refreshList();calc();
+loadFromHash();
+</script>
+</body>
+</html>
